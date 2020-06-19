@@ -250,6 +250,7 @@ class HAN_model():
             # print(state_fw)
             lstm_output = tf.concat(lstm_output_s1, axis=-1)
             lstm_output = MHA.layer_norm(lstm_output,scope=name+'_ln_norm')
+            #test
 
             return lstm_output
 
