@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
+from rich.progress import track
 
 class DataProcess():
     def __init__(self):
@@ -1016,12 +1017,17 @@ class DataProcess():
             height = rect.get_height()
             plt.text(rect.get_x() + rect.get_width() / 2. - 0.2, 1.03 * height, '%s' % int(height))
 
+    def test(self):
+        for i in track(range(100000),description='doing'):
+            for j in range(10000):
+                s = 1
+
 
 if __name__ == '__main__':
     DP = DataProcess()
     # DP.data_base_connection()
     # DP._getSaveOriginalDataFromDataBase()
     # DP.__datasplit__('./data')
-    DP.data_split_multi(file_path='./data_multi')
-    DP.get_dict_multi_lablel(filepath='./data_multi')
+    # DP.data_split_multi(file_path='./data_multi')
+    # DP.get_dict_multi_lablel(filepath='./data_multi')
     # DP.get_dict('./data')
