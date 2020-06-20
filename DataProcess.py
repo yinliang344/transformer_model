@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Time  : 2019/11/27 18:06
 # @user  : miss
-
 # import psycopg2
 import re
 from tqdm import trange,tqdm
@@ -1032,3 +1031,4 @@ if __name__ == '__main__':
     # DP.data_split_multi(file_path='./data_multi')
     # DP.get_dict_multi_lablel(filepath='./data_multi')
     # DP.get_dict('./data')
+    DP.test()
