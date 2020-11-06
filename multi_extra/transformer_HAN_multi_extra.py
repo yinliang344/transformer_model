@@ -43,11 +43,7 @@ class HAN_model():
                 dtype=tf.bool, shape=(None), name='trainning')
 
         with tf.name_scope('embedding'):
-            embedding_table = tf.get_variable(
-                name='embedding_table',
-                shape=(
-                    self.vocab_size,
-                    self.embedding_size),
+            embedding_table = tf.get_variable(name='embedding_table',shape=(self.vocab_size,self.embedding_size),
                 dtype=tf.float32,
                 initializer=self.xavier_initialzer)
             data_embedding = tf.nn.embedding_lookup(

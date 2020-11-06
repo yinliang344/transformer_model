@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time  : 2019/12/15 15:47
 # @user  : miss
-#!user\bin\python3 fypj_project\ DataProcess
-# -*- coding: utf-8 -*-
-# @Time  : 2019/12/05 20:42
-# @user  : miss
+
 import tensorflow as tf
 from config import *
 import numpy as np

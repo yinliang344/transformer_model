@@ -7,13 +7,9 @@ import numpy as np
 inputs是一个形如(batch_size, seq_len, word_size)的张量；
 函数返回一个形如(batch_size, seq_len, position_size)的位置张量。
 '''
-
-
 def Position_Embedding(inputs, position_size):
     batch_size, seq_len = tf.shape(inputs)[0], tf.shape(inputs)[1]
-    position_j = 1. / tf.pow(10000.,
-                             2 * tf.range(position_size / 2,
-                                          dtype=tf.float32) / position_size)
+    position_j = 1.0 / tf.pow(10000.0, 2 * tf.range(position_size / 2, dtype=tf.float32) / position_size)
     position_j = tf.expand_dims(position_j, 0)
     position_i = tf.range(tf.cast(seq_len, tf.float32), dtype=tf.float32)
     position_i = tf.expand_dims(position_i, 1)
@@ -30,8 +26,6 @@ seq_len是一个形如(batch_size,)的张量，代表每个序列的实际长度
 mode分为mul和add，mul是指把多出部分全部置零，一般用于全连接层之前；
 add是指把多出部分全部减去一个大的常数，一般用于softmax之前。
 '''
-
-
 def Mask(inputs, seq_len, mode='mul'):
     if seq_len is None:
         return inputs
@@ -50,22 +44,8 @@ def Mask(inputs, seq_len, mode='mul'):
 inputs是一个二阶或二阶以上的张量，即形如(batch_size,...,input_size)。
 只对最后一个维度做矩阵乘法，即输出一个形如(batch_size,...,ouput_size)的张量。
 '''
-
-
-def Dense(
-        inputs,
-        output_size,
-        initializer=None,
-        keep_rate=None,
-        is_trainning=True,
-        activition='relu',
-        bias=False):
-
-    outputs = tf.layers.dense(
-        inputs=inputs,
-        units=output_size,
-        use_bias=bias,
-        kernel_initializer=initializer)
+def Dense(inputs,output_size,initializer=None,keep_rate=None,is_trainning=True,activition='relu',bias=False):
+    outputs = tf.layers.dense(inputs=inputs,units=output_size,use_bias=bias,kernel_initializer=initializer)
     # outputs = tf.layers.batch_normalization(outputs,training=is_trainning)
     if activition is 'relu':
         outputs = tf.nn.relu(outputs)
@@ -81,20 +61,9 @@ def Dense(
 '''
 Multi-Head Attention的实现
 '''
-
-
-def multi_head_attention(
-        Q,
-        K,
-        V,
-        nb_head,
-        size_per_head,
-        initialzer=None,
-        keep_rate=None,
-        is_trainning=None,
-        activation='relu',
-        Q_len=None,
-        V_len=None):
+def multi_head_attention(Q, K, V, nb_head, size_per_head, initialzer=None,
+                         keep_rate=None, is_trainning=None, activation='relu',
+                         Q_len=None, V_len=None):
     # 对Q、K、V分别作线性映射
     query = Dense(inputs=Q,
                   output_size=nb_head * size_per_head,
@@ -132,18 +101,12 @@ def multi_head_attention(
     # 输出并mask
     output = tf.matmul(A, value)
     output = tf.transpose(output, [0, 2, 1, 3])
-    output = tf.reshape(
-        output, (-1, tf.shape(output)[1], nb_head * size_per_head))
+    output = tf.reshape(output, (-1, tf.shape(output)[1], nb_head * size_per_head))
     output = Mask(output, Q_len, 'mul')
     return output
 
 
-def feed_forward(
-        inputs,
-        initializer=None,
-        keep_rate=None,
-        is_training=True,
-        activition='relu'):
+def feed_forward(inputs, initializer=None, keep_rate=None, is_training=True, activition='relu'):
     shapes = int(inputs.shape[-1])
     dense = Dense(inputs=inputs,
                   output_size=shapes * 2,
@@ -165,79 +128,34 @@ def feed_forward(
 然后残差连接和norm，再经过两层全连接，最后残差连接和norm
 输出是（batch_size, seq_len, word_size）形状
 '''
-
-
-def encoder(
-        name,
-        inputs,
-        embedding_size,
-        nb_layers,
-        nb_head,
-        size_per_head,
-        initializer=None,
-        Q_len=None,
-        V_len=None,
-        training=True,
-        keep_rate=None,
-        activition='relu'):
+def encoder(name, inputs, embedding_size, nb_layers, nb_head, size_per_head, initializer=None,
+            Q_len=None, V_len=None, training=True, keep_rate=None, activition='relu'):
     with tf.variable_scope(name):
-        position = Position_Embedding(
-            inputs=inputs, position_size=embedding_size)
+        position = Position_Embedding(inputs=inputs, position_size=embedding_size)
         batch = tf.concat([position, inputs], axis=-1)
         for i in range(nb_layers):
-            mha_layer = multi_head_attention(
-                Q=batch,
-                K=batch,
-                V=batch,
-                nb_head=np.shape(batch)[2] //
-                size_per_head,
-                size_per_head=size_per_head,
-                initialzer=initializer,
-                keep_rate=keep_rate,
-                is_trainning=training,
-                activation=activition,
-                Q_len=Q_len,
-                V_len=V_len)
+            mha_layer = multi_head_attention(Q=batch, K=batch, V=batch, nb_head=nb_head,
+                                             size_per_head=size_per_head, initialzer=initializer,
+                                             keep_rate=keep_rate, is_trainning=training,
+                                             activation=activition, Q_len=Q_len, V_len=V_len)
             add_layer_1 = tf.add(batch, mha_layer)
-            ln_layer_1 = layer_norm(
-                x=add_layer_1, scope=name + '_lnlayer_1_' + str(i))
+            ln_layer_1 = layer_norm(x=add_layer_1, scope=name + '_lnlayer_1_' + str(i))
             ff_layer = feed_forward(inputs=ln_layer_1,
                                     initializer=initializer,
                                     keep_rate=keep_rate,
                                     is_training=training,
                                     activition=activition)
             add_layer_2 = tf.add(ln_layer_1, ff_layer)
-            batch = layer_norm(
-                add_layer_2,
-                scope=name +
-                '_lnlayer_2_' +
-                str(i))
-
+            batch = layer_norm(add_layer_2, scope=name + '_lnlayer_2_' + str(i))
         return batch
 
 
-def conv2D(
-        inputs,
-        kernel_shape,
-        strides,
-        padding,
-        kernel_name,
-        training,
-        activation='relu',
-        dropuot_rate=None):
-    kernel = tf.get_variable(
-        dtype=tf.float32,
-        shape=kernel_shape,
-        name=kernel_name,
-        regularizer=tf.contrib.layers.l2_regularizer(10e-6),
-        initializer=tf.contrib.layers.xavier_initializer())
-    conv_output = tf.nn.conv2d(
-        input=inputs,
-        filter=kernel,
-        strides=strides,
-        padding=padding)
-    conv_output = tf.layers.batch_normalization(
-        inputs=conv_output, training=training)
+def conv2D(inputs, kernel_shape, strides, padding, kernel_name, training, activation='relu',dropuot_rate=None):
+    kernel = tf.get_variable(dtype=tf.float32,shape=kernel_shape,name=kernel_name,
+                             regularizer=tf.contrib.layers.l2_regularizer(10e-6),
+                             initializer=tf.contrib.layers.xavier_initializer())
+    conv_output = tf.nn.conv2d(input=inputs, filter=kernel, strides=strides, padding=padding)
+    conv_output = tf.layers.batch_normalization(inputs=conv_output, training=training)
     if activation is 'relu':
         conv_output = tf.nn.relu(conv_output)
     elif activation is 'leaky_relu':
@@ -261,24 +179,11 @@ def dense_block(input, nb_layer, strides, keep_rate, training, padding, name):
     return x
 
 
-def transition_block(
-        input,
-        output_channel,
-        keep_rate,
-        padding,
-        training,
-        kernel_name):
-    x = conv2D(inputs=input,
-               kernel_shape=[1, 1, input.shape[3], output_channel],
-               strides=[1, 1, 1, 1],
-               padding=padding,
-               dropuot_rate=keep_rate,
-               kernel_name=kernel_name + 'kernel',
-               training=training)
-    x_output = tf.nn.max_pool(
-        value=x, ksize=[
-            1, 2, 2, 1], strides=[
-            1, 2, 2, 1], padding=padding)
+def transition_block(input, output_channel, keep_rate, padding, training, kernel_name):
+    x = conv2D(inputs=input, kernel_shape=[1, 1, input.shape[3], output_channel],
+               strides=[1, 1, 1, 1],padding=padding,dropuot_rate=keep_rate,
+               kernel_name=kernel_name + 'kernel',training=training)
+    x_output = tf.nn.max_pool(value=x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding=padding)
     return x_output
 
 
@@ -308,5 +213,4 @@ def layer_norm(x, scope='layer_norm'):
     :param scope: the name of layer
     :return:
     '''
-    return tf.contrib.layers.layer_norm(
-        x, center=True, scale=True, scope=scope)
+    return tf.contrib.layers.layer_norm(x, center=True, scale=True, scope=scope)
